@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#008069">
+<meta name="apple-mobile-web-app-title" content="Clock">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{font:15px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#efeae2;color:#111b21;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;cursor:pointer}
+
+/* header */
+header{background:#008069;color:#fff;padding:10px 6px 10px 12px;display:flex;align-items:center;gap:10px;padding-top:max(10px,env(safe-area-inset-top))}
+.av{width:40px;height:40px;border-radius:50%;background:#d9fdd3;color:#008069;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.hd{flex:1;min-width:0}
+.hd b{display:block;font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd small{display:block;font-size:12.5px;opacity:.9;height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd small.ty{color:#d9fdd3;font-weight:600}
+#more{background:none;border:0;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;line-height:1}
+#more:active{background:rgba(255,255,255,.15)}
+
+/* join */
+#join{margin:auto;width:min(92%,360px);background:#fff;padding:22px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+#join h2{margin:0 0 14px}
+#join input{width:100%;margin-bottom:10px;padding:12px;border:1px solid #ccc;border-radius:10px;font:inherit}
+#join button{width:100%;padding:12px;border:0;border-radius:10px;background:#008069;color:#fff;font-weight:600}
+#join p{font-size:13px;color:#667781;margin:10px 0 0}
+
+/* chat */
+#chat{display:none;flex:1;min-height:0;flex-direction:column}
+#msgs{flex:1;overflow-y:auto;padding:10px 10px 6px;display:flex;flex-direction:column;gap:3px;
+  background-color:#efeae2;
+  background-image:radial-gradient(rgba(11,20,26,.045) 1.2px,transparent 1.4px),radial-gradient(rgba(11,20,26,.03) 1px,transparent 1.2px);
+  background-size:26px 26px,26px 26px;background-position:0 0,13px 13px}
+.m{position:relative;max-width:82%;min-width:64px;padding:5px 8px 4px 9px;border-radius:8px;background:#fff;align-self:flex-start;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;box-shadow:0 1px .5px rgba(11,20,26,.13);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.m.me{background:#d9fdd3;align-self:flex-end}
+.m.first{margin-top:6px}
+.m.first:not(.me){border-top-left-radius:0}
+.m.first.me{border-top-right-radius:0}
+.m.flash{animation:fl 1.1s}
+@keyframes fl{0%,60%{box-shadow:0 0 0 100vmax rgba(0,128,105,.18) inset}100%{box-shadow:0 1px .5px rgba(11,20,26,.13)}}
+.n{display:block;font-size:12.5px;font-weight:600;color:#06cf9c;padding-right:18px}
+.tx{display:inline}
+.meta{float:right;margin:6px 0 -2px 10px;font-size:11px;color:#667781;white-space:nowrap;line-height:1.2}
+.meta i{font-style:normal;margin-right:3px}
+.tk{font-weight:700;letter-spacing:-2px;margin-left:3px}
+.tk.s{color:#53bdeb}
+.del{color:#667781;font-style:italic}
+.q{display:block;border-left:4px solid #06cf9c;background:rgba(11,20,26,.06);border-radius:6px;padding:4px 8px;margin:1px 0 4px;cursor:pointer;overflow:hidden}
+.me .q{background:rgba(11,20,26,.07)}
+.q b{display:block;font-size:12.5px;color:#06cf9c}
+.q span{display:block;font-size:13px;color:#667781;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ar{position:absolute;top:1px;right:2px;width:22px;height:20px;border:0;background:none;color:#667781;font-size:14px;line-height:20px;padding:0;border-radius:6px;opacity:.85}
+.me .ar{background:linear-gradient(90deg,transparent,#d9fdd3 40%)}
+
+/* reply / edit bar */
+#bar{display:none;background:#f0f2f5;padding:8px 10px 0;align-items:center;gap:8px}
+#bar .bx{flex:1;min-width:0;background:#fff;border-left:4px solid #06cf9c;border-radius:8px;padding:6px 10px}
+#bar b{display:block;font-size:12.5px;color:#06cf9c}
+#bar span{display:block;font-size:13.5px;color:#667781;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#barx{border:0;background:none;font-size:20px;color:#667781;width:32px;height:32px}
+
+footer{display:flex;gap:8px;padding:8px;background:#f0f2f5;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+footer input{flex:1;padding:12px 16px;border:0;border-radius:24px;font:inherit;outline:0;min-width:0}
+footer button{width:46px;height:46px;border:0;border-radius:50%;background:#008069;color:#fff;font-size:19px;flex:none}
+
+/* whatsapp look */
+footer{background:transparent;gap:6px;padding:6px 8px}
+.pill{flex:1;display:flex;align-items:center;background:#fff;border-radius:24px;padding:0 4px;min-width:0}
+.pill input{background:transparent!important;padding:12px 4px!important;border-radius:0!important}
+.pill button{width:38px;height:44px;background:none;color:#667781;font-size:21px;border-radius:0;flex:none}
+#bar{background:transparent}
+.m.first::before{content:"";position:absolute;top:0;width:9px;height:13px;background:inherit}
+.m.first:not(.me)::before{left:-8px;clip-path:polygon(100% 0,100% 100%,0 0)}
+.m.first.me::before{right:-8px;clip-path:polygon(0 0,100% 0,0 100%)}
+.ds{align-self:center;background:#fff;color:#54656f;font-size:12.5px;padding:5px 12px;border-radius:8px;margin:8px 0 4px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+.enc{align-self:center;max-width:88%;text-align:center;background:#ffeecd;color:#54656f;font-size:12.5px;padding:6px 10px;border-radius:8px;margin:4px 0 8px}
+.rx{display:block;clear:both;width:fit-content;background:#fff;border-radius:12px;padding:1px 6px;font-size:14px;margin:2px 0 -12px;box-shadow:0 1px 2px rgba(11,20,26,.25)}
+.m.hasrx{margin-bottom:12px}
+.mi{display:block;max-width:100%;width:240px;border-radius:6px;margin:1px 0 3px;cursor:pointer}
+#emp{display:none;grid-template-columns:repeat(8,1fr);gap:2px;background:#f0f2f5;padding:6px 8px;max-height:150px;overflow-y:auto}
+#emp span{font-size:24px;text-align:center;padding:4px 0;cursor:pointer}
+#menu .rr{display:flex;justify-content:space-around;padding:8px 6px;font-size:24px;border-bottom:1px solid rgba(128,128,128,.2)}
+#menu .rr span{padding:0 4px}
+#iv{display:none;position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.92);align-items:center;justify-content:center}
+#iv img{max-width:100%;max-height:100%}
+body.dark{background:#0b141a;color:#e9edef}
+body.dark header{background:#202c33}
+body.dark #msgs{background-color:#0b141a;background-image:radial-gradient(rgba(255,255,255,.035) 1.2px,transparent 1.4px),radial-gradient(rgba(255,255,255,.025) 1px,transparent 1.2px)}
+body.dark .m{background:#202c33;box-shadow:none}
+body.dark .m.me{background:#005c4b}
+body.dark .me .ar{background:linear-gradient(90deg,transparent,#005c4b 40%)}
+body.dark .ar,body.dark .meta,body.dark .vl,body.dark .q span{color:#8696a0}
+body.dark .pill{background:#2a3942}
+body.dark #emp{background:#202c33}
+body.dark .pill input{color:#e9edef}
+body.dark .pill button{color:#8696a0}
+body.dark #bar .bx{background:#1d282f}
+body.dark #bar span{color:#8696a0}
+body.dark #menu{background:#233138;color:#e9edef}
+body.dark #menu div:active{background:#2a3942}
+body.dark .ds{background:#182229;color:#8696a0}
+body.dark .enc{background:#182229;color:#ffd279}
+body.dark .rx{background:#233138}
+body.dark #rec{background:#202c33;color:#e9edef}
+body.dark .vb i{background:rgba(255,255,255,.2)}
+body.dark .q{background:rgba(0,0,0,.25)}
+body.dark #join{background:#202c33;color:#e9edef}
+body.dark #join input{background:#2a3942;color:#e9edef;border-color:#2a3942}
+
+/* voice */
+.vc{display:flex;align-items:center;gap:8px;width:215px;max-width:100%;padding:2px 22px 2px 0}
+.vp{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:#008069;color:#fff;font-size:14px;padding:0}
+.vb{flex:1;height:22px;display:flex;align-items:center;cursor:pointer}
+.vb i{display:block;width:100%;height:4px;border-radius:2px;background:rgba(11,20,26,.18);position:relative}
+.vb i b{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:2px;background:#008069}
+.vb i b::after{content:"";position:absolute;right:-5px;top:-3px;width:10px;height:10px;border-radius:50%;background:#008069}
+.vl{flex:none;font-size:12px;color:#667781;min-width:32px;text-align:right}
+#rec{display:none;align-items:center;gap:12px;padding:8px 12px;background:#f0f2f5;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+#rec .dot{width:11px;height:11px;border-radius:50%;background:#e53935;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.25}}
+#rec #rt{font-size:16px;font-variant-numeric:tabular-nums;flex:1}
+#rcx{border:0;background:none;font-size:22px;width:40px;height:40px}
+#rcs{width:46px;height:46px;border:0;border-radius:50%;background:#008069;color:#fff;font-size:19px}
+
+/* floating menu */
+#menu{position:fixed;display:none;z-index:50;background:#fff;border-radius:10px;box-shadow:0 4px 18px rgba(11,20,26,.28);min-width:170px;padding:6px 0}
+#menu div{padding:11px 18px;font-size:15px}
+#menu div:active{background:#f0f2f5}
+#menu .red{color:#d32f2f}
+
+/* lock */
+#lock{display:none;position:fixed;inset:0;z-index:100;background:#0b0f14;color:#e8eef5;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#lock svg{width:min(72vw,290px);height:auto;touch-action:none}
+#ck-dig{font-size:46px;font-weight:300;letter-spacing:1px}
+#ck-date{font-size:14px;opacity:.55}
+#ck-opt{position:absolute;right:12px;top:50%;margin-top:-14px;width:28px;height:28px;padding:0;border:1.5px solid rgba(255,255,255,.3);border-radius:50%;background:none;color:#fff;font-size:15px;line-height:1;opacity:.45}
+#ck-opt.on{opacity:.9;background:rgba(255,255,255,.12)}
+#ck-ctl{display:none;gap:22px;margin-top:6px}
+#ck-ctl div{display:flex;flex-direction:column;gap:8px;align-items:center;font-size:12px;opacity:.9}
+#ck-ctl button{width:64px;height:40px;border:0;border-radius:10px;background:#1c2530;color:#e8eef5;font-size:22px}
+#ck-ctl button:active{background:#2b3846}
+#ck-ok{background:#25d366!important;color:#06281a!important;font-weight:700}
+
+/* video call */
+#vcall{background:none;border:0;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%}
+#vcall:active{background:rgba(255,255,255,.15)}
+#ringbar{display:none;position:fixed;left:10px;right:10px;top:max(10px,env(safe-area-inset-top));z-index:120;background:#1c2530;color:#fff;border-radius:14px;padding:10px 12px;align-items:center;justify-content:space-between;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+#ringbar .rb-txt small{display:block;opacity:.7;font-size:12px}
+.rb-btns{display:flex;gap:8px}
+.rb-btns button{width:42px;height:42px;border:0;border-radius:50%;font-size:18px}
+.rb-ok{background:#25d366;color:#fff}
+.rb-x{background:#e24747;color:#fff}
+#callview{display:none;position:fixed;inset:0;z-index:130;background:#0b0f14}
+#callview video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#111}
+#localV{width:100px;height:140px;top:max(12px,env(safe-area-inset-top));right:12px;left:auto;bottom:auto;border-radius:12px;border:2px solid rgba(255,255,255,.5)}
+#callstate{position:absolute;top:max(14px,env(safe-area-inset-top));left:14px;color:#fff;font-size:14px;background:rgba(0,0,0,.4);padding:4px 10px;border-radius:20px}
+#callbtns{position:absolute;left:0;right:0;bottom:max(24px,env(safe-area-inset-bottom));display:flex;justify-content:center;gap:22px}
+#callbtns button{width:54px;height:54px;border-radius:50%;border:0;font-size:22px;background:#1c2530;color:#fff}
+#callbtns button.off{background:#e24747}
+#cv-end{background:#e24747}
+</style>
+</head>
+<body>
+<header>
+  <div class="av" id="avt">💬</div>
+  <div class="hd"><b id="ttl">Dost Chat</b><small id="st"></small></div>
+  <button id="vcall" aria-label="Video call">📹</button>
+  <button id="more" aria-label="Settings">⋮</button>
+</header>
+
+<div id="join">
+  <h2>Chat shuru karo</h2>
+  <input id="name" placeholder="Aapka naam" maxlength="20">
+  <input id="room" placeholder="Chat code (lamba aur secret, jaise: ali-sara-7391)" maxlength="40">
+  <button id="go">Chat kholo</button>
+  <p>Dost ko bhi yehi chat code batao. Jis ka code same hoga wahi chat dekh sakta hai.</p>
+</div>
+
+<div id="chat">
+  <div id="msgs"></div>
+  <div id="bar"><div class="bx"><b id="bt"></b><span id="bs"></span></div><button id="barx">✕</button></div>
+  <div id="rec"><button id="rcx" aria-label="Cancel">🗑️</button><span class="dot"></span><span id="rt">0:00</span><button id="rcs" aria-label="Send voice">➤</button></div>
+  <div id="emp"></div>
+  <footer id="ft">
+    <div class="pill"><button id="emo" aria-label="Emoji">😊</button><input id="in" placeholder="Message likho…" autocomplete="off"><button id="att" aria-label="Photo">📎</button></div>
+    <button id="send">➤</button>
+  </footer>
+  <input type="file" id="fi" accept="image/*" hidden>
+</div>
+
+<div id="menu"></div>
+<div id="iv"><img alt=""></div>
+
+<div id="lock">
+  <svg viewBox="0 0 200 200" aria-label="Clock">
+    <circle cx="100" cy="100" r="96" fill="#121922" stroke="#2b3846" stroke-width="3"/>
+    <g id="ck-ticks" stroke="#8795a5"></g>
+    <line id="ck-h" x1="100" y1="100" x2="100" y2="58" stroke="#e8eef5" stroke-width="5" stroke-linecap="round"/>
+    <line id="ck-m" x1="100" y1="100" x2="100" y2="34" stroke="#e8eef5" stroke-width="3.5" stroke-linecap="round"/>
+    <line id="ck-s" x1="100" y1="112" x2="100" y2="28" stroke="#ff9f43" stroke-width="1.6" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="4.5" fill="#ff9f43"/>
+  </svg>
+  <div id="ck-dig"></div>
+  <div id="ck-date"></div>
+  <div id="ck-ctl">
+    <div>Ghanta<button id="hp">+</button><button id="hm">−</button></div>
+    <div>Minute<button id="mp">+</button><button id="mm">−</button></div>
+    <div>&nbsp;<button id="ck-ok">OK</button></div>
+  </div>
+  <button id="ck-opt" aria-label="Option">○</button>
+</div>
+
+<div id="ringbar">
+  <div class="rb-txt"><b id="rb-name"></b><small>Video call aa rahi hai</small></div>
+  <div class="rb-btns"><button id="rb-dec" class="rb-x">✕</button><button id="rb-acc" class="rb-ok">📹</button></div>
+</div>
+
+<div id="callview">
+  <video id="remoteV" autoplay playsinline></video>
+  <video id="localV" autoplay playsinline muted></video>
+  <div id="callstate"></div>
+  <div id="callbtns">
+    <button id="cv-mic">🎙️</button>
+    <button id="cv-cam">🎥</button>
+    <button id="cv-end">📞</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+var $=function(i){return document.getElementById(i)};
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||'';if(v===null){localStorage.removeItem(k);return ''}localStorage.setItem(k,v)}catch(e){return ''}}
+$('name').value=ls('dc_name'); $('room').value=ls('dc_room');
+var cid=ls('dc_cid'); if(!cid){cid=Math.random().toString(36).slice(2,10); ls('dc_cid',cid);}
+
+var all={}, seen={}, sentSeen={}, edits={}, dels={}, typers={}, dlv={}, reacts={}, hidden={}, peer=null;
+var client=null, base='', myName='', conn='', replyTo=null, editing=null, lastTyping=0, pushRoom='';
+
+/* ---------- helpers ---------- */
+function clip(s,n){s=String(s||'');return s.length>n?s.slice(0,n)+'…':s}
+function hash(s){var h=5381;s='dc|'+s;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h.toString(36)}
+function hhmm(ts){return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+
+/* ---------- status / typing ---------- */
+function setStatus(){
+  var now=Date.now(), names=[];
+  Object.keys(typers).forEach(function(c){ if(now-typers[c].ts<3500)names.push(typers[c].name); else delete typers[c]; });
+  var st=$('st');
+  if(names.length){st.textContent=names.join(', ')+' typing…';st.className='ty';}
+  else{
+    var tx=conn;
+    if(conn==='online'||!conn){ tx=peer?((now-peer.ts<20000)?'online':'last seen '+hhmm(peer.ts)):''; }
+    st.textContent=tx;st.className='';
+  }
+  $('ttl').textContent=peer?peer.name:'Dost Chat'; $('avt').textContent=peer?peer.name.charAt(0).toUpperCase():'💬';
+}
+setInterval(setStatus,1000);
+
+/* ---------- render ---------- */
+function render(keepScroll){
+  var box=$('msgs'), atBottom=box.scrollHeight-box.scrollTop-box.clientHeight<80, oldTop=box.scrollTop;
+  var list=Object.keys(all).map(function(k){return all[k]}).sort(function(a,b){return a.ts-b.ts}).slice(-150);
+  box.textContent='';
+  var en=document.createElement('div');en.className='enc';en.textContent='🔒 Is chat ke messages sirf wahi dekh sakte hain jinke paas chat code hai.';box.appendChild(en);
+  var prev=null;
+  list=list.filter(function(v){return !hidden[v.id]});
+  list.forEach(function(v){
+    var mine=v.cid===cid, isDel=!!v.deleted;
+    var newDay=!prev||new Date(prev.ts).toDateString()!==new Date(v.ts).toDateString();
+    if(newDay){var ds=document.createElement('div');ds.className='ds';ds.textContent=dayLabel(v.ts);box.appendChild(ds);}
+    var rxs=reacts[v.id]?Object.keys(reacts[v.id]).map(function(c){return reacts[v.id][c]}):[];
+    var el=document.createElement('div'); el.className='m'+(mine?' me':'')+((newDay||prev.cid!==v.cid)?' first':'')+(rxs.length&&!isDel?' hasrx':''); el.id='m_'+v.id;
+    if(!mine && (!prev||prev.cid!==v.cid)){var n=document.createElement('span');n.className='n';n.textContent=v.name;el.appendChild(n);}
+    if(v.reply && !isDel){
+      var q=document.createElement('span');q.className='q';
+      var qb=document.createElement('b');qb.textContent=v.reply.cid===cid?'Aap':v.reply.name;
+      var qs=document.createElement('span');qs.textContent=clip(v.reply.text,80);
+      q.appendChild(qb);q.appendChild(qs);
+      q.onclick=function(e){e.stopPropagation();jumpTo(v.reply.id)};
+      el.appendChild(q);
+    }
+    if(v.img&&!isDel){var im=document.createElement('img');im.className='mi';im.src=v.img;im.onclick=function(e){e.stopPropagation();$('iv').firstElementChild.src=v.img;$('iv').style.display='flex'};el.appendChild(im);}
+    if(v.audio&&!isDel){ el.appendChild(voiceEl(v)); }
+    else if(!(v.img&&!isDel&&v.text==='📷 Photo')){
+      var b=document.createElement('span');b.className='tx'+(isDel?' del':'');
+      b.textContent=isDel?'🚫 Ye message delete kar diya gaya':v.text;
+      el.appendChild(b);
+    }
+    var t=document.createElement('span');t.className='meta';
+    if(v.edited&&!isDel){var e=document.createElement('i');e.textContent='edited';t.appendChild(e);}
+    t.appendChild(document.createTextNode(hhmm(v.ts)));
+    if(mine&&!isDel){var k=document.createElement('span');k.className='tk'+(seen[v.id]?' s':'');k.textContent=(seen[v.id]||dlv[v.id])?'\u2713\u2713':'\u2713';t.appendChild(k);}
+    el.appendChild(t);
+    if(rxs.length&&!isDel){var rx=document.createElement('span');rx.className='rx';rx.textContent=rxs.join('')+(rxs.length>1?' '+rxs.length:'');el.appendChild(rx);}
+    if(!isDel){
+      if(mine){
+        var ar=document.createElement('button');ar.className='ar';ar.textContent='\u2335';ar.innerHTML='&#8964;';ar.setAttribute('aria-label','Options');
+        ar.onclick=function(e){e.stopPropagation();msgMenu(v,ar.getBoundingClientRect())};
+        el.appendChild(ar);
+      }
+      attachSwipe(el,v);
+    }
+    box.appendChild(el); prev=v;
+  });
+  if(atBottom||!keepScroll)box.scrollTop=box.scrollHeight; else box.scrollTop=oldTop;
+}
+function jumpTo(id){
+  var el=$('m_'+id); if(!el)return;
+  el.scrollIntoView({block:'center',behavior:'smooth'});
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+/* ---------- swipe right = reply ---------- */
+function attachSwipe(el,v){
+  var sx=0,sy=0,dx=0,on=false,lock=false,lp=0;
+  el.addEventListener('pointerdown',function(e){
+    if(e.target.closest&&e.target.closest('.ar'))return;
+    on=true;lock=false;sx=e.clientX;sy=e.clientY;dx=0;el.style.transition='none';
+    clearTimeout(lp);lp=setTimeout(function(){ if(on&&!lock){on=false;if(navigator.vibrate)try{navigator.vibrate(20)}catch(_){} var r=el.getBoundingClientRect();msgMenu(v,{left:r.left,right:r.right,top:r.top,bottom:r.bottom});} },450);
+  });
+  el.addEventListener('pointermove',function(e){
+    if(!on)return;
+    var mx=e.clientX-sx,my=e.clientY-sy; if(Math.abs(mx)>8||Math.abs(my)>8)clearTimeout(lp);
+    if(!lock){ if(Math.abs(my)>12&&Math.abs(my)>Math.abs(mx)){on=false;el.style.transform='';return;}
+               if(mx>8&&Math.abs(mx)>Math.abs(my)){lock=true;try{el.setPointerCapture(e.pointerId)}catch(_){}} }
+    if(lock){dx=Math.max(0,Math.min(mx,90));el.style.transform='translateX('+dx+'px)';}
+  });
+  el.addEventListener('contextmenu',function(e){e.preventDefault();msgMenu(v,{left:e.clientX,right:e.clientX,top:e.clientY,bottom:e.clientY})});
+  function end(){
+    clearTimeout(lp);
+    if(!on&&!dx)return;
+    on=false;el.style.transition='transform .18s';el.style.transform='';
+    if(dx>=60){ if(navigator.vibrate)try{navigator.vibrate(15)}catch(_){} setReply(v); }
+    dx=0;
+  }
+  el.addEventListener('pointerup',end);
+  el.addEventListener('pointercancel',end);
+}
+
+/* ---------- voice messages ---------- */
+var players={}, rec=null;
+function fmt(s){s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+function voiceEl(v){
+  var p=players[v.id];
+  if(!p){
+    var a=new Audio(v.audio); a.preload='metadata';
+    p={a:a,ui:null};
+    a.ontimeupdate=function(){ if(p.ui){p.ui.fill.style.width=Math.min(100,a.currentTime/(v.dur||a.duration||1)*100)+'%';p.ui.lbl.textContent=fmt(a.currentTime);} };
+    a.onended=function(){ a.currentTime=0; if(p.ui){p.ui.btn.textContent='▶';p.ui.fill.style.width='0';p.ui.lbl.textContent=fmt(v.dur);} };
+    players[v.id]=p;
+  }
+  var w=document.createElement('div');w.className='vc';
+  var btn=document.createElement('button');btn.className='vp';btn.textContent=p.a.paused?'▶':'⏸';
+  var bar=document.createElement('div');bar.className='vb';
+  var tr=document.createElement('i'),fill=document.createElement('b');tr.appendChild(fill);bar.appendChild(tr);
+  var lbl=document.createElement('span');lbl.className='vl';
+  lbl.textContent=fmt(p.a.paused&&!p.a.currentTime?v.dur:p.a.currentTime);
+  fill.style.width=Math.min(100,p.a.currentTime/(v.dur||1)*100)+'%';
+  p.ui={btn:btn,fill:fill,lbl:lbl};
+  btn.onclick=function(e){
+    e.stopPropagation();
+    if(p.a.paused){
+      Object.keys(players).forEach(function(k){ if(players[k]!==p&&!players[k].a.paused){players[k].a.pause();if(players[k].ui)players[k].ui.btn.textContent='▶';} });
+      p.a.play().catch(function(){}); btn.textContent='⏸';
+    } else { p.a.pause(); btn.textContent='▶'; }
+  };
+  bar.onclick=function(e){
+    e.stopPropagation();
+    var r=tr.getBoundingClientRect(); p.a.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(v.dur||p.a.duration||0);
+  };
+  w.appendChild(btn);w.appendChild(bar);w.appendChild(lbl);
+  return w;
+}
+function stopPlayers(){ Object.keys(players).forEach(function(k){try{players[k].a.pause()}catch(_){}}); players={}; }
+
+function startRec(){
+  if(rec||!client||!client.connected)return;
+  if(!navigator.mediaDevices||!window.MediaRecorder){alert('Is browser mein voice record nahi ho sakti');return;}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    var types=['audio/webm;codecs=opus','audio/mp4','audio/webm'];
+    var mt=''; for(var i=0;i<types.length;i++){ if(MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(types[i])){mt=types[i];break;} }
+    var mr; try{mr=mt?new MediaRecorder(stream,{mimeType:mt,audioBitsPerSecond:24000}):new MediaRecorder(stream);}catch(e){mr=new MediaRecorder(stream);}
+    rec={mr:mr,chunks:[],t0:Date.now(),cancel:false,stream:stream,timer:null};
+    mr.ondataavailable=function(e){ if(e.data&&e.data.size)rec.chunks.push(e.data); };
+    mr.onstop=function(){
+      var r=rec; rec=null; clearInterval(r.timer);
+      r.stream.getTracks().forEach(function(t){t.stop()});
+      $('rec').style.display='none'; $('ft').style.display='flex';
+      var dur=Math.round((Date.now()-r.t0)/1000);
+      if(r.cancel||dur<1||!r.chunks.length)return;
+      var blob=new Blob(r.chunks,{type:r.mr.mimeType||mt||'audio/webm'});
+      var fr=new FileReader();
+      fr.onload=function(){ sendVoice(fr.result,dur); };
+      fr.readAsDataURL(blob);
+    };
+    mr.start();
+    $('ft').style.display='none'; $('rec').style.display='flex'; $('rt').textContent='0:00';
+    rec.timer=setInterval(function(){
+      var s=(Date.now()-rec.t0)/1000; $('rt').textContent=fmt(s);
+      if(s>=60)stopRec(false);
+    },250);
+  }).catch(function(){
+    alert('Mic ki ijazat nahi mili. Browser settings mein mic allow karo. (Mic sirf https ya localhost par chalta hai)');
+  });
+}
+function stopRec(cancel){ if(!rec)return; rec.cancel=!!cancel; try{rec.mr.stop()}catch(e){} }
+$('rcx').onclick=function(){stopRec(true)};
+$('rcs').onclick=function(){stopRec(false)};
+
+function sendVoice(dataUrl,dur){
+  var msg={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cid:cid,name:myName,text:'🎤 Voice message',audio:dataUrl,dur:dur,ts:Date.now()};
+  if(replyTo)msg.reply={id:replyTo.id,cid:replyTo.cid,name:replyTo.name,text:clip(replyTo.text,120)};
+  replyTo=null; updateBar();
+  merge([msg]); $('msgs').scrollTop=$('msgs').scrollHeight;
+  if(client&&client.connected){client.publish(base+'/msg',JSON.stringify(msg),{qos:1});pushNotify();}
+}
+
+function dayLabel(ts){var d=new Date(ts),n=new Date(),y=new Date(Date.now()-864e5);
+  if(d.toDateString()===n.toDateString())return 'Aaj'; if(d.toDateString()===y.toDateString())return 'Kal';
+  return d.toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'});}
+function setReact(id,em){
+  reacts[id]=reacts[id]||{}; if(em&&reacts[id][cid]!==em)reacts[id][cid]=em; else delete reacts[id][cid];
+  pub('react',{id:id,cid:cid,e:reacts[id][cid]||''}); render(true);
+}
+function msgMenu(v,rect){
+  var its=[{row:['👍','❤️','😂','😮','😢','🙏'],f:function(em){setReact(v.id,em)}},
+    {t:'↩️ Reply',f:function(){setReply(v)}}];
+  if(!v.audio&&!(v.img&&v.text==='📷 Photo'))its.push({t:'📋 Copy',f:function(){try{navigator.clipboard.writeText(v.text)}catch(e){}}});
+  if(v.cid===cid&&!v.audio&&!v.img)its.push({t:'✏️ Edit',f:function(){startEdit(v.id)}});
+  its.push({t:'🗑️ Mujhse delete',f:function(){hidden[v.id]=1;render(true)}});
+  if(v.cid===cid)its.push({t:'🗑️ Sab ke liye delete',c:'red',f:function(){delMsg(v.id)}});
+  showMenu(its,rect);
+}
+function sendImage(d){
+  var msg={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cid:cid,name:myName,text:$('in').value.trim()||'📷 Photo',img:d,ts:Date.now()};
+  if(replyTo)msg.reply={id:replyTo.id,cid:replyTo.cid,name:replyTo.name,text:clip(replyTo.text,120)};
+  $('in').value='';replyTo=null;updateBar();
+  merge([msg]); $('msgs').scrollTop=$('msgs').scrollHeight;
+  if(client&&client.connected){client.publish(base+'/msg',JSON.stringify(msg),{qos:1});pushNotify();}
+}
+function presPing(){ if(client&&client.connected&&myName)client.publish(base+'/pres',JSON.stringify({cid:cid,name:myName}),{qos:0}); }
+setInterval(presPing,8000);
+
+/* mic <-> send icon */
+function updIcon(){ var has=$('in').value.trim()||editing; $('send').textContent=has?'➤':'🎤'; $('send').setAttribute('aria-label',has?'Send':'Voice message'); }
+function sendOrMic(){ if($('in').value.trim()||editing)send(); else startRec(); }
+
+/* ---------- reply / edit bar ---------- */
+function updateBar(){
+  updIcon();
+  var bar=$('bar');
+  if(editing){bar.style.display='flex';$('bt').textContent='✏️ Message edit karo';$('bs').textContent=clip(all[editing]&&all[editing].text,80);}
+  else if(replyTo){bar.style.display='flex';$('bt').textContent=replyTo.cid===cid?'Aap':replyTo.name;$('bs').textContent=clip(replyTo.text,80);}
+  else bar.style.display='none';
+}
+function setReply(v){ editing=null; replyTo={id:v.id,cid:v.cid,name:v.name,text:v.text}; updateBar(); $('in').focus(); }
+function startEdit(id){ if(!all[id])return; replyTo=null; editing=id; $('in').value=all[id].text; updateBar(); $('in').focus(); }
+function cancelBar(){ if(editing)$('in').value=''; editing=null; replyTo=null; updateBar(); }
+$('barx').onclick=cancelBar;
+
+/* ---------- floating menu ---------- */
+var menuAt=0;
+function showMenu(items,rect){
+  var m=$('menu'); m.textContent='';
+  items.forEach(function(it){
+    var d=document.createElement('div');
+    if(it.row){ d.className='rr'; it.row.forEach(function(em){var sp=document.createElement('span');sp.textContent=em;sp.onclick=function(e){e.stopPropagation();hideMenu();it.f(em)};d.appendChild(sp)}); }
+    else { d.textContent=it.t; if(it.c)d.className=it.c; d.onclick=function(e){e.stopPropagation();hideMenu();it.f();}; }
+    m.appendChild(d);
+  });
+  menuAt=Date.now();
+  m.style.display='block';
+  var w=m.offsetWidth,h=m.offsetHeight;
+  var left=Math.max(8,Math.min(rect.right-w,innerWidth-w-8));
+  var top=rect.bottom+4; if(top+h>innerHeight-8)top=Math.max(8,rect.top-h-4);
+  m.style.left=left+'px'; m.style.top=top+'px';
+}
+function hideMenu(){$('menu').style.display='none'}
+document.addEventListener('click',function(){ if(Date.now()-menuAt>400)hideMenu(); });
+
+/* ---------- messages ---------- */
+function applyMods(m){
+  if(edits[m.id]&&edits[m.id].cid===m.cid){m.text=edits[m.id].text;m.edited=1;}
+  if(dels[m.id]&&dels[m.id]===m.cid){m.deleted=1;}
+}
+function merge(arr){ var ch=false; arr.forEach(function(m){ if(m&&m.id&&!all[m.id]){applyMods(m);all[m.id]=m;ch=true;} }); if(ch)render(true); }
+function pub(topic,obj){ if(client&&client.connected)client.publish(base+'/'+topic,JSON.stringify(obj),{qos:1}); }
+function sendSeen(ids){
+  ids=ids.filter(function(i){return !sentSeen[i]});
+  if(!ids.length||!client||!client.connected)return;
+  ids.forEach(function(i){sentSeen[i]=1});
+  pub('seen',{cid:cid,ids:ids});
+}
+function seenAll(){ sendSeen(Object.keys(all).filter(function(i){return all[i].cid!==cid&&!all[i].deleted})); }
+
+function delMsg(id){
+  var m=all[id]; if(!m||m.cid!==cid)return;
+  if(!confirm('Ye message sab ke liye delete kar dein?'))return;
+  m.deleted=1; dels[id]=cid; pub('del',{id:id,cid:cid});
+  if(editing===id)cancelBar();
+  render(true);
+}
+
+function send(){
+  var text=$('in').value.trim(); if(!text||!client||!client.connected)return;
+  if(editing){
+    var m=all[editing];
+    if(m&&m.text!==text){ m.text=text;m.edited=1;edits[m.id]={cid:cid,text:text}; pub('edit',{id:m.id,cid:cid,text:text}); }
+    editing=null; $('in').value=''; updateBar(); render(true); return;
+  }
+  var msg={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),cid:cid,name:myName,text:text,ts:Date.now()};
+  if(replyTo)msg.reply={id:replyTo.id,cid:replyTo.cid,name:replyTo.name,text:clip(replyTo.text,120)};
+  $('in').value=''; replyTo=null; updateBar(); lastTyping=0;
+  merge([msg]); $('msgs').scrollTop=$('msgs').scrollHeight;
+  client.publish(base+'/msg',JSON.stringify(msg),{qos:1}); pushNotify();
+  $('in').focus();
+}
+
+function start(){
+  var name=$('name').value.trim(), room=$('room').value.trim().toLowerCase().replace(/[^a-z0-9_-]/g,'');
+  if(!name||room.length<4){alert('Naam likho aur kam se kam 4 akshar ka chat code do');return;}
+  ls('dc_name',name); ls('dc_room',room); myName=name;
+  pushRoom=room;
+  $('join').style.display='none'; $('chat').style.display='flex'; conn='connecting…'; setStatus();
+  base='dostchat-v1/'+room;
+  client=mqtt.connect('wss://broker.hivemq.com:8884/mqtt',{reconnectPeriod:3000,clean:true});
+  client.on('connect',function(){ conn='online'; setStatus(); client.subscribe([base+'/msg',base+'/seen',base+'/typing',base+'/edit',base+'/del',base+'/react',base+'/pres',base+'/rtc']); presPing(); client.publish(base+'/hist','',{retain:true}); });
+  client.on('reconnect',function(){ conn='reconnecting…'; setStatus(); });
+  client.on('offline',function(){ conn='offline'; setStatus(); });
+  client.on('message',function(topic,payload){
+    try{
+      var d=JSON.parse(payload.toString()), t=topic.slice(base.length+1);
+      if(t==='seen'){ if(d.cid!==cid){ (d.ids||[]).forEach(function(i){seen[i]=1;dlv[i]=1}); (d.dlv||[]).forEach(function(i){dlv[i]=1}); render(true); } }
+      else if(t==='typing'){ if(d.cid!==cid){ typers[d.cid]={name:d.name,ts:Date.now()}; peer={cid:d.cid,name:d.name,ts:Date.now()}; setStatus(); }
+      else if(t==='pres'){} }
+      else if(t==='pres'){ if(d.cid!==cid){ var was=peer&&Date.now()-peer.ts<20000; peer={cid:d.cid,name:d.name,ts:Date.now()}; if(!was)presPing(); setStatus(); } }
+      else if(t==='react'){ if(d.cid!==cid){ reacts[d.id]=reacts[d.id]||{}; if(d.e)reacts[d.id][d.cid]=d.e; else delete reacts[d.id][d.cid]; render(true); } }
+      else if(t==='edit'){
+        if(d.cid===cid)return;
+        edits[d.id]={cid:d.cid,text:d.text};
+        var m=all[d.id]; if(m&&m.cid===d.cid){m.text=d.text;m.edited=1;render(true);}
+      }
+      else if(t==='del'){
+        if(d.cid===cid)return;
+        dels[d.id]=d.cid;
+        var m2=all[d.id]; if(m2&&m2.cid===d.cid){m2.deleted=1;render(true);}
+      }
+      else if(t==='rtc'){ if(d.cid!==cid) rtcHandle(d); }
+      else if(t==='msg'){
+        if(d.cid!==cid){delete typers[d.cid];peer={cid:d.cid,name:d.name,ts:Date.now()};if(!all[d.id]){pub('seen',{cid:cid,dlv:[d.id],ids:[]});notifyMsg();}}
+        merge([d]); setStatus();
+        if(d.cid!==cid && !document.hidden) sendSeen([d.id]);
+      }
+    }catch(e){}
+  });
+  $('send').onclick=sendOrMic;
+  $('in').onkeydown=function(e){if(e.key==='Enter')send();};
+  $('in').oninput=function(){
+    updIcon();
+    var now=Date.now();
+    if(now-lastTyping>2000 && $('in').value && !editing){ lastTyping=now; if(client.connected)client.publish(base+'/typing',JSON.stringify({cid:cid,name:myName}),{qos:0}); }
+  };
+}
+
+/* ---------- settings menu + app lock ---------- */
+function lockOn(){return !!ls('dc_ck')}
+function pad2(n){return ('0'+n).slice(-2)}
+function ckNorm(h,m){return pad2(h%12||12)+':'+pad2(m)}
+var ckSet=false, ckH=0, ckM=0, ckTimer=null;
+(function(){var g=$('ck-ticks');for(var i=0;i<60;i++){var l=document.createElementNS('http://www.w3.org/2000/svg','line'),big=i%5===0;
+  l.setAttribute('x1',100);l.setAttribute('x2',100);l.setAttribute('y1',big?10:8);l.setAttribute('y2',big?22:14);
+  l.setAttribute('stroke-width',big?3:1.2);l.setAttribute('transform','rotate('+(i*6)+' 100 100)');g.appendChild(l);}})();
+function rot(id,a){$(id).setAttribute('transform','rotate('+a+' 100 100)')}
+function ckDraw(){
+  if($('lock').style.display!=='flex')return;
+  var d=new Date(),h,m,s;
+  if(ckSet){h=ckH;m=ckM;s=0;$('ck-dig').textContent=pad2(h)+':'+pad2(m);$('ck-s').style.display='none';}
+  else{h=d.getHours();m=d.getMinutes();s=d.getSeconds();$('ck-dig').textContent=d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});$('ck-s').style.display='';}
+  $('ck-date').textContent=d.toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'});
+  if(!ckDrag)rot('ck-h',((h%12)+m/60)*30); if(!ckDrag)rot('ck-m',(m+s/60)*6); rot('ck-s',s*6);
+}
+setInterval(ckDraw,1000);
+function ckMode(on){
+  ckSet=on; var o=$('ck-opt'); o.textContent=on?'✓':'○'; o.className=on?'on':'';
+  $('ck-ctl').style.display=on?'flex':'none';
+  if(on){var d=new Date();ckH=d.getHours();ckM=d.getMinutes();}
+  ckDraw();
+}
+function ckTryOk(){
+  if(hash(ckNorm(ckH,ckM))===ls('dc_ck')){ unlockApp(); }
+  else { var dg=$('ck-dig'); dg.style.color='#ff6b6b'; setTimeout(function(){dg.style.color='';},500); }
+}
+$('ck-opt').onclick=function(){ckMode(!ckSet)};
+var ckDrag=null;
+function ckAngle(ev,svg){
+  var r=svg.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  var x=(ev.touches?ev.touches[0].clientX:ev.clientX)-cx, y=(ev.touches?ev.touches[0].clientY:ev.clientY)-cy;
+  var a=Math.atan2(x,-y)*180/Math.PI; if(a<0)a+=360; return a;
+}
+(function(){
+  var svg=document.querySelector('#lock svg');
+  function angDiff(a,b){var d=Math.abs(a-b)%360;return d>180?360-d:d;}
+  svg.addEventListener('pointerdown',function(ev){
+    if(!ckSet)return; ev.preventDefault();
+    var a=ckAngle(ev,svg);
+    var ha=((ckH%12)+ckM/60)*30, ma=ckM*6;
+    ckDrag = angDiff(a,ma)<=angDiff(a,ha) ? 'm' : 'h';
+    svg.setPointerCapture&&svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener('pointermove',function(ev){
+    if(!ckDrag||!ckSet)return; ev.preventDefault();
+    var a=ckAngle(ev,svg);
+    if(ckDrag==='m'){ ckM=Math.round(a/6)%60; rot('ck-m',ckM*6); }
+    else { var h12=Math.round(a/30)%12; ckH=h12+(ckH>=12?12:0); rot('ck-h',((ckH%12)+ckM/60)*30); }
+    $('ck-dig').textContent=pad2(ckH)+':'+pad2(ckM);
+  });
+  function up(){ckDrag=null;}
+  svg.addEventListener('pointerup',up); svg.addEventListener('pointerleave',up); svg.addEventListener('pointercancel',up);
+})();
+
+function hold(id,fn){
+  var b=$(id),t1=null,t2=null;
+  function stop(){clearTimeout(t1);clearInterval(t2);}
+  b.addEventListener('pointerdown',function(e){e.preventDefault();fn();t1=setTimeout(function(){t2=setInterval(fn,90);},400);});
+  ['pointerup','pointerleave','pointercancel'].forEach(function(ev){b.addEventListener(ev,stop);});
+}
+hold('hp',function(){ckH=(ckH+1)%24;ckDraw();});
+hold('hm',function(){ckH=(ckH+23)%24;ckDraw();});
+hold('mp',function(){ckM=(ckM+1)%60;ckDraw();});
+hold('mm',function(){ckM=(ckM+59)%60;ckDraw();});
+$('ck-ok').onclick=ckTryOk;
+function lockNow(){
+  if(!lockOn())return;
+  $('lock').style.display='flex'; ckMode(false);
+}
+function unlockApp(){
+  $('lock').style.display='none'; ckSet=false;
+  if(ckTimer){clearTimeout(ckTimer);ckTimer=null;}
+  if(client)seenAll();
+}
+function askTime(msg){
+  var p=prompt(msg+' (jaise 4:40)'); if(p===null)return null;
+  var m=/^\s*(\d{1,2})\s*[:.]\s*(\d{2})\s*$/.exec(p);
+  if(!m||+m[1]>23||+m[2]>59){alert('Time galat hai. Aise likho: 4:40');return null;}
+  return ckNorm(+m[1],+m[2]);
+}
+function setPin(){
+  var t=askTime('Clock password time likho'); if(!t)return;
+  ls('dc_ck',hash(t)); alert('Clock lock lag gaya. Ab app khulne par clock nazar aaye gi. Side ke ○ ko tick karke time '+t+' par lao to app khul jaye gi.');
+}
+function removePin(){
+  var t=askTime('Lock hatane ke liye purana clock password likho'); if(!t)return;
+  if(hash(t)===ls('dc_ck')){ls('dc_ck',null);alert('Lock hata diya');} else alert('Galat time');
+}
+$('more').onclick=function(e){
+  e.stopPropagation();
+  var items=[];
+  if(lockOn()){
+    items.push({t:'🔒 Abhi lock karo',f:lockNow});
+    items.push({t:'🕒 Clock password badlo',f:function(){var t=askTime('Purana clock password likho');if(!t)return;if(hash(t)===ls('dc_ck'))setPin();else alert('Galat time');}});
+    items.push({t:'🔓 Lock hatao',f:removePin});
+  } else items.push({t:'🕒 Clock password lagao',f:setPin});
+  items.push({t:ls('dc_dark')==='1'?'☀️ Light mode':'🌙 Dark mode',f:function(){ls('dc_dark',ls('dc_dark')==='1'?'0':'1');applyDark();}});
+  items.push({t:'🧹 Chat saaf karo',f:function(){ if(confirm('Is device se saari chat saaf karein?')){all={};reacts={};stopPlayers();render();} }});
+  items.push({t:ls('dc_vhide')==='1'?'🔓 Video call wapas lao':'🙈 Video call chupao',f:function(){
+    if(ls('dc_vhide')==='1'){ var p=prompt('Password likho'); if(p===null)return; if(p==='786'){ls('dc_vhide',null);applyVHide();alert('Video call wapas aa gaya');} else alert('Galat password'); }
+    else { ls('dc_vhide','1'); applyVHide(); }
+  }});
+  items.push({t:ls('dc_push')==='1'?'🔔 Push notification on hai':'🔔 Push notification on karo',f:subscribePush});
+  items.push({t:'🚪 Chat code badlo',f:function(){location.reload()}});
+  showMenu(items,$('more').getBoundingClientRect());
+};
+
+/* ---------- mobile privacy wipe + auto lock ---------- */
+var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+function wipe(){ stopRec(true); if(!isMobile)return; stopPlayers(); all={}; seen={}; edits={}; dels={}; dlv={}; reacts={}; hidden={}; replyTo=null; editing=null; updateBar(); var b=$('msgs'); if(b)b.textContent=''; var i=$('in'); if(i)i.value=''; }
+document.addEventListener('visibilitychange',function(){ if(document.hidden){wipe();lockNow();} else if(!lockOn()||$('lock').style.display!=='flex')seenAll(); });
+window.addEventListener('pagehide',function(){wipe();lockNow();});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(function(){});
+$('go').onclick=start;
+var EMOJIS='😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😎 🤩 🥳 😏 😒 😞 😔 😢 😭 😤 😡 🤯 😱 😴 🤔 🙄 😬 🤗 🙏 👍 👎 👏 🙌 💪 👌 🤝 ❤️ 💔 🔥 ✨ 🎉 🎂 🌹 ☕ 🍕 🙈 😜 🤪 🥺 😌 😷 🤒';
+var emp=$('emp'); EMOJIS.split(' ').forEach(function(e){var sp=document.createElement('span');sp.textContent=e;sp.onclick=function(){$('in').value+=e;updIcon();};emp.appendChild(sp);});
+$('emo').onclick=function(){emp.style.display=emp.style.display==='grid'?'none':'grid'};
+$('att').onclick=function(){ if(client&&client.connected)$('fi').click(); };
+$('fi').onchange=function(){
+  var f=this.files[0]; this.value=''; if(!f)return;
+  var img=new Image(),u=URL.createObjectURL(f);
+  img.onload=function(){
+    var k=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u);
+    sendImage(c.toDataURL('image/jpeg',.6));
+  };
+  img.src=u;
+};
+$('iv').onclick=function(){this.style.display='none'};
+function applyDark(){ var on=ls('dc_dark')==='1'; document.body.classList.toggle('dark',on); document.querySelector('meta[name=theme-color]').content=on?'#202c33':'#008069'; }
+if(!ls('dc_dark'))ls('dc_dark',(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'1':'0');
+
+/* ---------- video call (WebRTC, signaling over MQTT) ---------- */
+var pc=null, localStream=null, callPeerCid=null, callPeerName='', pendingOffer=null, micOn=true, camOn=true, callTimer=null;
+var RTC_CFG={iceServers:[{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']}]};
+function rtcSend(d){ if(client&&client.connected)client.publish(base+'/rtc',JSON.stringify(d),{qos:1}); }
+function newPc(){
+  var p=new RTCPeerConnection(RTC_CFG);
+  p.onicecandidate=function(e){ if(e.candidate) rtcSend({kind:'ice',cid:cid,candidate:e.candidate}); };
+  p.ontrack=function(e){ $('remoteV').srcObject=e.streams[0]; setCallState('Connected'); };
+  p.onconnectionstatechange=function(){ if(p.connectionState==='failed'||p.connectionState==='disconnected')endCall(true); };
+  return p;
+}
+function setCallState(t){ $('callstate').textContent=t; }
+async function getMedia(){
+  localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:{facingMode:'user'}});
+  $('localV').srcObject=localStream;
+}
+async function startCall(){
+  if(!client||!client.connected){alert('Pehle chat connect ho jaye.');return;}
+  try{ await getMedia(); }catch(e){ alert('Camera/mic ki ijazat nahi mili.'); return; }
+  pc=newPc();
+  localStream.getTracks().forEach(function(t){pc.addTrack(t,localStream)});
+  callPeerCid=null; callPeerName=peer?peer.name:'';
+  $('callview').style.display='block'; setCallState('Call ho rahi hai…');
+  var offer=await pc.createOffer(); await pc.setLocalDescription(offer);
+  rtcSend({kind:'offer',cid:cid,name:myName,sdp:offer});
+}
+function rtcHandle(d){
+  if(d.kind==='offer'){
+    if(pc){ rtcSend({kind:'busy',cid:cid,to:d.cid}); return; }
+    pendingOffer=d; callPeerCid=d.cid; callPeerName=d.name||'Dost';
+    $('rb-name').textContent=callPeerName; $('ringbar').style.display='flex';
+  }
+  else if(d.kind==='answer'){ if(pc&&callPeerCid===null){ callPeerCid=d.cid; pc.setRemoteDescription(d.sdp); } }
+  else if(d.kind==='ice'){ if(pc&&(callPeerCid===d.cid||callPeerCid===null)) pc.addIceCandidate(d.candidate).catch(function(){}); }
+  else if(d.kind==='end'){ if(pc||pendingOffer) endCall(true); }
+  else if(d.kind==='busy'){ if(d.to===cid) endCall(true); }
+}
+async function acceptCall(){
+  $('ringbar').style.display='none'; var off=pendingOffer; pendingOffer=null;
+  if(!off)return;
+  try{ await getMedia(); }catch(e){ alert('Camera/mic ki ijazat nahi mili.'); rtcSend({kind:'end',cid:cid}); return; }
+  pc=newPc();
+  localStream.getTracks().forEach(function(t){pc.addTrack(t,localStream)});
+  $('callview').style.display='block'; setCallState('Jud raha hai…');
+  await pc.setRemoteDescription(off.sdp);
+  var ans=await pc.createAnswer(); await pc.setLocalDescription(ans);
+  rtcSend({kind:'answer',cid:cid,sdp:ans});
+}
+function declineCall(){ $('ringbar').style.display='none'; if(pendingOffer)rtcSend({kind:'end',cid:cid}); pendingOffer=null; callPeerCid=null; }
+function endCall(remoteEnded){
+  if(pc){ try{pc.close()}catch(e){} pc=null; }
+  if(localStream){ localStream.getTracks().forEach(function(t){t.stop()}); localStream=null; }
+  $('remoteV').srcObject=null; $('localV').srcObject=null;
+  $('callview').style.display='none'; $('ringbar').style.display='none';
+  if(!remoteEnded && callPeerCid!==undefined) rtcSend({kind:'end',cid:cid});
+  callPeerCid=null; pendingOffer=null; micOn=true; camOn=true;
+  $('cv-mic').className=''; $('cv-cam').className='';
+}
+$('vcall').onclick=startCall;
+$('rb-acc').onclick=acceptCall;
+$('rb-dec').onclick=declineCall;
+$('cv-end').onclick=function(){endCall(false)};
+$('cv-mic').onclick=function(){ micOn=!micOn; if(localStream)localStream.getAudioTracks().forEach(function(t){t.enabled=micOn}); this.className=micOn?'':'off'; };
+$('cv-cam').onclick=function(){ camOn=!camOn; if(localStream)localStream.getVideoTracks().forEach(function(t){t.enabled=camOn}); this.className=camOn?'':'off'; };
+
+/* ---------- hide video call (password 786) ---------- */
+function applyVHide(){ $('vcall').style.display = ls('dc_vhide')==='1' ? 'none' : ''; }
+
+/* ---------- notifications (works while app open/background) ---------- */
+function notifyMsg(){
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  if(!document.hidden) return;
+  try{
+    var n=new Notification('Clock',{body:'Naya message aaya',icon:'icon-192.png',tag:'dc-msg'});
+    n.onclick=function(){ window.focus(); n.close(); };
+  }catch(e){}
+}
+
+/* ---------- push notifications (works even when app is fully closed) ---------- */
+var PUSH_SERVER='https://YOUR-PUSH-SERVER.vercel.app';
+var VAPID_PUBLIC_KEY='BDPCo2Xy8zQRqYw7TH1JbkxBsOzfjU1Bs0JdMuo6FiO6ka39FteD9lyFlPxI3gzkDG5uoU3JbfDjZH4-P4RtmG0';
+function urlB64(s){
+  var pad='='.repeat((4-s.length%4)%4), b64=(s+pad).replace(/-/g,'+').replace(/_/g,'/');
+  var raw=atob(b64), out=new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+  return out;
+}
+function pushReady(){ return PUSH_SERVER.indexOf('YOUR-PUSH-SERVER')<0; }
+async function subscribePush(){
+  if(!pushReady()){ alert('Push server abhi set up nahi hua (developer wale steps dekho).'); return; }
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){ alert('Ye browser push support nahi karta.'); return; }
+  if(!pushRoom){ alert('Pehle chat kholo (naam + chat code), phir ye on karo.'); return; }
+  try{
+    var perm=await Notification.requestPermission();
+    if(perm!=='granted'){ alert('Ijazat nahi mili.'); return; }
+    var reg=await navigator.serviceWorker.ready;
+    var sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64(VAPID_PUBLIC_KEY)});
+    await fetch(PUSH_SERVER+'/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:pushRoom,cid:cid,name:myName,sub:sub})});
+    ls('dc_push','1');
+    alert('Push notification on ho gayi. Ab app band hone par bhi message par notification aayegi.');
+  }catch(e){ alert('Push on karne mein masla hua.'); }
+}
+function pushNotify(){
+  if(!pushReady()||!pushRoom) return;
+  fetch(PUSH_SERVER+'/api/notify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:pushRoom,cid:cid,name:myName})}).catch(function(){});
+}
+
+/* ---------- keyboard overlap fix ---------- */
+(function(){
+  var vv=window.visualViewport;
+  function fix(){
+    if(!vv)return;
+    document.body.style.height=vv.height+'px';
+    window.scrollTo(0,0);
+    var box=$('msgs'); if(box)box.scrollTop=box.scrollHeight;
+  }
+  if(vv){ vv.addEventListener('resize',fix); vv.addEventListener('scroll',fix); }
+  $('in').addEventListener('focus',function(){ setTimeout(fix,250); setTimeout(fix,500); });
+  $('in').addEventListener('blur',function(){ document.body.style.height=''; });
+})();
+
+applyVHide();
+applyDark();
+updIcon();
+lockNow();
+</script>
+</body>
+</html>
